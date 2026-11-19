@@ -1,0 +1,21 @@
+{
+  "name": "rakan/wiman-hotspot-management",
+  "description": "RAKAN WIMAN Hotspot Billing & Network Management",
+  "type": "project",
+  "require": {
+    "php": ">=8.2",
+    "ext-pdo": "*",
+    "ext-pdo_mysql": "*",
+    "ext-openssl": "*",
+    "ext-json": "*",
+    "ext-mbstring": "*"
+  },
+  "autoload": {
+    "psr-4": {
+      "RakanWiman\\": "app/"
+    }
+  },
+  "scripts": {
+    "check": "php -l public/index.php"
+  }
+}

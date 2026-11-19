@@ -1,0 +1,140 @@
+<!doctype html>
+<html lang="id">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+  <meta name="theme-color" content="#10213b">
+  <meta name="referrer" content="origin">
+  <title>Login Wi-Fi · RAKAN WIMAN</title>
+  <link rel="stylesheet" href="css/hotspot.css">
+  $(if chap-id)
+  <script src="md5.js"></script>
+  <script>
+    function rwDoLogin() {
+      var loginForm = document.forms.login;
+      var sendForm = document.forms.sendin;
+      if (!loginForm || !sendForm) return false;
+      sendForm.username.value = loginForm.username.value;
+      sendForm.password.value = hexMD5('$(chap-id)' + loginForm.password.value + '$(chap-challenge)');
+      sendForm.submit();
+      return false;
+    }
+  </script>
+  $(endif)
+</head>
+<body>
+  <main class="page-shell">
+    <section class="login-card" aria-labelledby="page-title">
+      <header class="brand-row">
+        <div class="brand-mark" aria-hidden="true">RW</div>
+        <div class="brand-copy">
+          <strong>RAKAN WIMAN</strong>
+          <span>HOTSPOT INTERNET</span>
+        </div>
+      </header>
+
+      <div class="wifi-symbol" aria-hidden="true">
+        <svg viewBox="0 0 64 64" role="img"><path d="M7 23a38 38 0 0 1 50 0M16 33a24 24 0 0 1 32 0M25 43a11 11 0 0 1 14 0"/><circle cx="32" cy="52" r="3"/></svg>
+      </div>
+
+      <div class="intro">
+        <p class="eyebrow">SELAMAT DATANG</p>
+        <h1 id="page-title">Hubungkan Perangkat Anda</h1>
+        <p>Masukkan kode voucher untuk mulai menggunakan internet.</p>
+      </div>
+
+      $(if error)
+      <div class="error-message" role="alert">$(error)</div>
+      $(endif)
+
+      $(if chap-id)
+      <form name="sendin" action="$(link-login-only)" method="post" class="hidden-form">
+        <input type="hidden" name="username">
+        <input type="hidden" name="password">
+        <input type="hidden" name="dst" value="$(link-orig)">
+        <input type="hidden" name="popup" value="false">
+      </form>
+      $(endif)
+
+      <form name="login" action="$(link-login-only)" method="post" class="login-form" $(if chap-id) onsubmit="return rwDoLogin()" $(endif)>
+        <input type="hidden" name="dst" value="$(link-orig)">
+        <input type="hidden" name="popup" value="false">
+        <label for="rw-username">Username Voucher</label>
+        <input id="rw-username" name="username" type="text" value="$(username)" placeholder="Masukkan username" autocomplete="username" autocapitalize="none" spellcheck="false" required autofocus>
+        <label for="rw-password">Password</label>
+        <div class="password-wrap">
+          <input id="rw-password" name="password" type="password" placeholder="Masukkan password" autocomplete="current-password" required>
+          <button class="show-password" type="button" onclick="rwTogglePassword()" aria-label="Tampilkan password">Lihat</button>
+        </div>
+        <button class="login-button" type="submit">MASUK KE INTERNET <span aria-hidden="true">→</span></button>
+      </form>
+
+      <button class="scan-voucher-button" id="rw-scan-voucher" type="button">
+        <span aria-hidden="true">▦</span> SCAN QR VOUCHER
+      </button>
+      <p class="scan-voucher-note">Arahkan kamera ke QR pada kartu voucher untuk login otomatis.</p>
+
+      <div class="purchase-box">
+        <div>
+          <strong>Belum punya voucher?</strong>
+          <span>Beli voucher secara online menggunakan QRIS.</span>
+        </div>
+        <a class="purchase-button" href="__RW_PURCHASE_URL__">BELI VOUCHER</a>
+      </div>
+
+      <footer class="page-footer">Dikelola dengan <strong>RAKAN WIMAN</strong></footer>
+    </section>
+    <p class="outside-note">Pastikan perangkat Anda terhubung ke jaringan Wi-Fi yang benar.</p>
+  </main>
+  <script>
+    function rwTogglePassword() {
+      var field = document.getElementById('rw-password');
+      var button = document.querySelector('.show-password');
+      if (!field || !button) return;
+      var visible = field.type === 'password';
+      field.type = visible ? 'text' : 'password';
+      button.textContent = visible ? 'Sembunyikan' : 'Lihat';
+      button.setAttribute('aria-label', visible ? 'Sembunyikan password' : 'Tampilkan password');
+    }
+
+    (function () {
+      var scannerUrl = '__RW_SCANNER_URL__';
+      var scannerOrigin;
+      try { scannerOrigin = new URL(scannerUrl).origin; } catch (e) { return; }
+      var scanButton = document.getElementById('rw-scan-voucher');
+      var scanWindow = null;
+      if (scanButton) {
+        scanButton.addEventListener('click', function () {
+          var target = new URL(scannerUrl);
+          target.searchParams.set('return_origin', window.location.origin);
+          scanWindow = window.open(target.href, 'RakanWimanVoucherScanner', 'popup=yes,width=520,height=760');
+          if (!scanWindow) {
+            alert('Browser memblokir jendela pemindai. Izinkan pop-up untuk halaman login HotSpot, lalu coba lagi.');
+            return;
+          }
+          try { scanWindow.focus(); } catch (e) {}
+        });
+      }
+      window.addEventListener('message', function (event) {
+        if (!scanWindow || event.source !== scanWindow || event.origin !== scannerOrigin) return;
+        var data = event.data || {};
+        if (data.type !== 'RW_HOTSPOT_VOUCHER' || typeof data.username !== 'string' || !data.username) return;
+        var user = document.getElementById('rw-username');
+        var pass = document.getElementById('rw-password');
+        if (!user || !pass) return;
+        user.value = data.username;
+        pass.value = typeof data.password === 'string' && data.password ? data.password : data.username;
+        scanWindow = null;
+        var loginForm = document.forms.login;
+        if (loginForm && typeof loginForm.requestSubmit === 'function') {
+          loginForm.requestSubmit();
+        } else if (typeof rwDoLogin === 'function') {
+          rwDoLogin();
+        } else if (loginForm) {
+          loginForm.submit();
+        }
+      });
+    })();
+  </script>
+</body>
+</html>
